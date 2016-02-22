@@ -9,12 +9,15 @@ def stock_picker(prices)
     i = 1
 
     while i < prices.length
-        if prices[i] > prices[sell] && sell > buy
-            sell = i
-        end
-        
-        if prices[i] < prices[buy] && i < sell
+
+        curr_diff = prices[sell] - prices[buy]
+
+        if prices[i] <= prices[buy] && i < sell && prices[sell] - prices[i] >= curr_diff
             buy = i
+        end
+
+        if prices[i] >= prices[sell] && i > buy && prices[i] - prices[buy] >= curr_diff
+            sell = i
         end
 
         i += 1    
@@ -25,4 +28,10 @@ def stock_picker(prices)
 
 end
 
-puts stock_picker([17,3,6,9,15,8,6,1,10])
+prices = [17,3,6,9,15,8,6,1,10]
+
+days_picked = stock_picker(prices)
+
+puts "The best buy day: #{days_picked[0]}."
+puts "The best sell day: #{days_picked[1]}."
+puts "Calculated profit: $#{prices[days_picked[1]] - prices[days_picked[0]]}."
