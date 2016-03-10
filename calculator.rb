@@ -166,11 +166,35 @@ def calculate(input)
         exit(0)
 
     else
-        in_parans = arr.slice(open_parans.min..close_parans.max)
+        open_counter = 0
+        close_counter = 0
+        open_index = 0
+        close_index = 0
+        
+        (0...arr.length).each do |i|
+            if arr[i] == "(" && open_counter == 0
+                open_index = i
+                open_counter += 1
+            
+            elsif arr[i] == "("
+                open_counter += 1
+                
+            elsif arr[i] == ")"
+                close_counter += 1
+                close_index = i
+                
+            end
+            
+            break if (open_counter != 0 && close_counter != 0) && (open_counter == close_counter)
+            
+        end
+        
+      
+        in_parans = arr.slice(open_index..close_index)
         in_parans.shift
         in_parans.pop
-        beginning = arr.slice(0...open_parans.min)
-        ending = arr.slice((close_parans.max + 1)...arr.length)
+        beginning = arr.slice(0...open_index)
+        ending = arr.slice((close_index + 1)...arr.length)
 
         puts in_parans.to_s, beginning.to_s, ending.to_s
 
