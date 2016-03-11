@@ -9,23 +9,30 @@ def decompose_actions(input)
     while string.length > 0 do
         op = string.shift
 
+        # puts op
+    
         case op
 
-        when "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."
+        when "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "%"
             argument += op
 
         when "*", "/", "**", "^", "+", "-"
-            if argument == ""
+            if argument == "" && op != "-"
                 puts "Are you sure you have enough arguments in your expression?"
                 exit(0)
             end
 
-            argument = convert_to_numbers(argument)
-            expression << argument
-
             if op == "*" && string[0] == "*"
                 op += string.shift
             end
+            
+            if op == "-" && argument == "" && (expression.length == 0 || "+-**/^".include?(expression[expression.length - 1]))
+                argument += op
+                next
+            end
+            
+            argument = convert_to_numbers(argument)
+            expression << argument
             
             expression << op
             argument = ""
@@ -50,11 +57,11 @@ def decompose_actions(input)
     puts expression.to_s
 
     result = perform_first_priority_operations(expression)
-    puts "after first priority ", result.to_s
+    # puts "after first priority ", result.to_s
     result = perform_second_priority_operations(result)
-    puts "after second priority ", result.to_s
+    # puts "after second priority ", result.to_s
 
-    puts "result ", result.to_s
+    # puts "result ", result.to_s
 
     return result[0].to_s
 
@@ -62,6 +69,10 @@ end
 
 
 def convert_to_numbers(string_to_convert)
+    if string_to_convert.end_with?("%")
+       # puts "has percent"
+       return string_to_convert
+    end
     return (string_to_convert.include?(".")) ? string_to_convert.to_f : string_to_convert.to_i
 end
 
@@ -70,7 +81,17 @@ def do_op(op, input)
     answer = 0
     idx1 = input.index(op) - 1
     idx2 = input.index(op) + 1
-
+    
+    if input[idx2].is_a?(String) && input[idx2].end_with?("%")
+        input[idx2] = input[idx2][0..-2]
+        input[idx2] = convert_to_numbers(input[idx2] + ".0") / 100 * input[idx1].abs
+    end
+    
+    if input[idx1].is_a?(String) && input[idx1].include?("%")
+        puts "I don't quite understand the % in the beginning."
+        exit(0)
+    end
+    
     case op
 
     when "**", "^"
@@ -80,7 +101,7 @@ def do_op(op, input)
         answer = input[idx1] * input[idx2]
 
     when "/"
-        answer = input[idx1] / input[idx2]
+        answer = input[idx1] / input[idx2].to_f
 
     when "+"
         answer = input[idx1] + input[idx2]
@@ -146,77 +167,44 @@ end
 def calculate(input)
 
     input_cleaned = input.gsub(/\s/, "")
-    arr = input_cleaned.split("")
+    inside_parans = input_cleaned.scan(/(\([^\(\)].+?\))/).flatten
+    
+    # puts inside_parans.to_s
 
-    open_parans = []
-    close_parans = []
-
-    arr.each_with_index do |char, idx|
-        open_parans << idx if char == "("
-        close_parans << idx if char == ")"
-    end
-
-    if (open_parans.length == 0 && close_parans.length == 0)
+    if (inside_parans.length == 0)
         answer = decompose_actions(input_cleaned)
-        return answer
-
-    elsif (open_parans.length > 0 && close_parans.length == 0) || (open_parans.length == 0 && close_parans.length > 0)
-        puts "It seems that the number of opening and closing"
-        puts "parantheses does not match. Please check."
-        exit(0)
 
     else
-        open_counter = 0
-        close_counter = 0
-        open_index = 0
-        close_index = 0
-        
-        (0...arr.length).each do |i|
-            if arr[i] == "(" && open_counter == 0
-                open_index = i
-                open_counter += 1
-            
-            elsif arr[i] == "("
-                open_counter += 1
-                
-            elsif arr[i] == ")"
-                close_counter += 1
-                close_index = i
-                
-            end
-            
-            break if (open_counter != 0 && close_counter != 0) && (open_counter == close_counter)
-            
+        inside_parans.each do |el|
+            to_calc = el[1..-2]
+            temp_answer = decompose_actions(to_calc)
+            input_cleaned = input_cleaned.sub(el, temp_answer)
         end
         
-      
-        in_parans = arr.slice(open_index..close_index)
-        in_parans.shift
-        in_parans.pop
-        beginning = arr.slice(0...open_index)
-        ending = arr.slice((close_index + 1)...arr.length)
+        # puts "new cleaned input for next iteration: ", input_cleaned
+        
+        answer = calculate(input_cleaned)
 
-        puts in_parans.to_s, beginning.to_s, ending.to_s
-
-        beginning = beginning.length > 0 ? beginning.join("") : ""
-        ending = ending.length > 0 ? ending.join("") : ""
-        in_parans = in_parans.join("")
-
-        answer = decompose_actions(beginning + calculate(in_parans) + ending)
-
-        return answer
     end
 
-    puts "answer ", answer
-
+    if answer == answer.to_i
+        answer = answer.to_i
+    end
+    
+    # puts "answer ", answer
+    return answer
 end
 
 
 
-puts "Treat me as a simple calculator."
-puts "And hit me with some numbers..."
+puts "Treat me as a simple calculator and hit me with some numbers..."
+puts "I think I can also understand parantheses and % signs."
 puts "What do you want me to calculate?"
+puts ""
+print "> "
 
 input = gets.chomp
 
-calculate(input)
+puts ""
+print "Answer: ", calculate(input)
+puts ""
